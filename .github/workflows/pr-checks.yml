@@ -1,0 +1,226 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # Job de validación rápida para PRs
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Necesario para git diff
+
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Cache dependencias
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Verificar formato de código
+      run: |
+        pip install black isort
+        # Verificar que el código esté formateado
+        black --check .
+        isort --check-only .
+
+    - name: Verificar linting básico
+      run: |
+        pip install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Verificar cambios en archivos sensibles
+      run: |
+        # Verificar que no se hayan modificado archivos sensibles
+        if git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E '\.(env|key|pem|crt)$'; then
+          echo "❌ No se permiten cambios en archivos sensibles"
+          exit 1
+        fi
+        echo "✅ No se detectaron cambios en archivos sensibles"
+
+    - name: Verificar que las migraciones de BD estén incluidas
+      run: |
+        # Verificar si hay cambios en modelos de BD
+        if git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E 'src/(domain|infrastructure).*\.(py)$'; then
+          echo "🔍 Se detectaron cambios en modelos de BD, verificando migraciones..."
+          if ! git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E 'migrations/.*\.(py)$'; then
+            echo "⚠️  Cambios en modelos detectados pero no se encontraron migraciones"
+            echo "Por favor, asegúrate de generar y incluir las migraciones necesarias"
+          else
+            echo "✅ Migraciones encontradas"
+          fi
+        fi
+
+    - name: Verificar documentación
+      run: |
+        # Verificar que los cambios en la API incluyan documentación
+        if git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E 'src/presentation.*\.(py)$'; then
+          echo "🔍 Se detectaron cambios en la API, verificando documentación..."
+          if ! git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E 'docs/.*\.(md)$'; then
+            echo "⚠️  Cambios en API detectados pero no se encontraron actualizaciones en documentación"
+            echo "Por favor, actualiza la documentación de la API si es necesario"
+          else
+            echo "✅ Documentación actualizada"
+          fi
+        fi
+
+    - name: Ejecutar tests unitarios rápidos
+      run: |
+        # Solo ejecutar tests que no requieran servicios externos
+        pytest tests/unit/ -v --tb=short -x
+
+  # Job de preview de la aplicación
+  preview-deploy:
+    name: Preview Deploy
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: preview_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+
+    - name: Construir imagen Docker para preview
+      run: |
+        docker build -t tracking-api-preview:${{ github.event.number }} .
+
+    - name: Ejecutar aplicación en modo preview
+      run: |
+        # Configurar variables de entorno para preview
+        export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/preview_db"
+        export REDIS_URL="redis://localhost:6379/0"
+        export JWT_SECRET_KEY="preview-secret-key"
+        export API_KEY="preview-api-key"
+        export FLASK_ENV="testing"
+        
+        # Ejecutar la aplicación en background
+        docker run -d \
+          --name tracking-preview-${{ github.event.number }} \
+          -p 8080:5000 \
+          -e DATABASE_URL="$DATABASE_URL" \
+          -e REDIS_URL="$REDIS_URL" \
+          -e JWT_SECRET_KEY="$JWT_SECRET_KEY" \
+          -e API_KEY="$API_KEY" \
+          -e FLASK_ENV="$FLASK_ENV" \
+          tracking-api-preview:${{ github.event.number }}
+
+    - name: Esperar a que la aplicación esté lista
+      run: |
+        sleep 30
+        # Verificar que la aplicación esté funcionando
+        for i in {1..10}; do
+          if curl -f http://localhost:8080/health; then
+            echo "✅ Aplicación lista"
+            break
+          fi
+          echo "⏳ Esperando aplicación... intento $i/10"
+          sleep 10
+        done
+
+    - name: Ejecutar tests de integración en preview
+      run: |
+        export API_BASE_URL="http://localhost:8080"
+        pytest tests/integration/ -v --tb=short
+
+    - name: Limpiar contenedores de preview
+      if: always()
+      run: |
+        docker stop tracking-preview-${{ github.event.number }} || true
+        docker rm tracking-preview-${{ github.event.number }} || true
+
+  # Job de comentario en PR
+  pr-comment:
+    name: PR Comment
+    runs-on: ubuntu-latest
+    needs: [pr-validation, preview-deploy]
+    if: always()
+    
+    steps:
+    - name: Comentar en PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && comment.body.includes('## 🔍 Validación de PR')
+          );
+          
+          const validationStatus = '${{ needs.pr-validation.result }}' === 'success' ? '✅' : '❌';
+          const previewStatus = '${{ needs.preview-deploy.result }}' === 'success' ? '✅' : '❌';
+          
+          const body = `## 🔍 Validación de PR
+          
+          | Verificación | Estado |
+          |--------------|--------|
+          | Validación de código | ${validationStatus} |
+          | Preview de aplicación | ${previewStatus} |
+          
+          ### 📋 Detalles
+          - **Validación de código**: ${{ needs.pr-validation.result === 'success' && 'Todos los checks pasaron correctamente' || 'Algunos checks fallaron' }}
+          - **Preview de aplicación**: ${{ needs.preview-deploy.result === 'success' && 'Aplicación desplegada y funcionando' || 'Error en el preview' }}
+          
+          ### 🚀 Próximos pasos
+          ${{ needs.pr-validation.result === 'success' && needs.preview-deploy.result === 'success' && '✅ PR listo para merge' || '⚠️ Revisar los errores antes de proceder' }}
+          `;
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: body
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+          }

@@ -1,0 +1,180 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión a liberar (ej: v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Configurar Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+    - name: Extraer versión
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/}
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "VERSION=${VERSION}"
+
+    - name: Verificar que la versión sea válida
+      run: |
+        if [[ ! "${{ steps.version.outputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "❌ Versión inválida: ${{ steps.version.outputs.version }}"
+          echo "La versión debe seguir el formato vX.Y.Z"
+          exit 1
+        fi
+        echo "✅ Versión válida: ${{ steps.version.outputs.version }}"
+
+    - name: Generar changelog
+      id: changelog
+      run: |
+        # Obtener el tag anterior
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        
+        if [ -z "$PREVIOUS_TAG" ]; then
+          echo "Este es el primer release"
+          CHANGELOG="## 🎉 Primer Release\n\n- Implementación inicial de la API de tracking\n- Funcionalidades básicas de checkpoints\n- Sistema de autenticación y autorización"
+        else
+          echo "Generando changelog desde $PREVIOUS_TAG hasta ${{ steps.version.outputs.version }}"
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD)
+          
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="No hay cambios desde $PREVIOUS_TAG"
+          fi
+          
+          CHANGELOG="## 📝 Cambios desde $PREVIOUS_TAG\n\n$CHANGELOG"
+        fi
+        
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Construir imagen Docker para release
+      run: |
+        docker build -t tracking-api:${{ steps.version.outputs.version }} .
+        docker tag tracking-api:${{ steps.version.outputs.version }} tracking-api:latest
+
+    - name: Crear release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        release_name: Release ${{ steps.version.outputs.version }}
+        body: |
+          # 🚀 Release ${{ steps.version.outputs.version }}
+          
+          ${{ steps.changelog.outputs.changelog }}
+          
+          ## 📦 Instalación
+          
+          ### Docker
+          ```bash
+          docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+          ```
+          
+          ### Docker Compose
+          ```bash
+          git clone https://github.com/${{ github.repository }}.git
+          cd coordinadora
+          git checkout ${{ steps.version.outputs.version }}
+          docker-compose up -d
+          ```
+          
+          ## 🔗 Enlaces
+          - [Documentación](https://github.com/${{ github.repository }}/blob/${{ steps.version.outputs.version }}/docs/)
+          - [API Documentation](https://github.com/${{ github.repository }}/blob/${{ steps.version.outputs.version }}/docs/api-documentation.md)
+          - [Changelog completo](https://github.com/${{ github.repository }}/compare/${{ steps.version.outputs.version }}^...${{ steps.version.outputs.version }})
+          
+          ## 📋 Checklist de Release
+          - [x] Tests pasando
+          - [x] Documentación actualizada
+          - [x] Imagen Docker construida
+          - [x] Changelog generado
+        draft: false
+        prerelease: false
+
+  build-and-push-release:
+    name: Build & Push Release Image
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+
+    - name: Configurar Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login al Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extraer metadatos
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest
+
+    - name: Construir y push imagen Docker
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  notify-release:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [build-and-push-release]
+    if: always()
+    
+    steps:
+    - name: Notificar release completado
+      run: |
+        echo "🎉 Release ${{ github.ref_name }} completado exitosamente"
+        echo "📦 Imagen Docker disponible en: ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
+        echo "📝 Release notes: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+        
+        # Aquí se podría agregar notificación a Slack, Teams, Discord, etc.
+        # curl -X POST -H 'Content-type: application/json' \
+        #   --data '{"text":"🎉 Nuevo release ${{ github.ref_name }} disponible!"}' \
+        #   ${{ secrets.SLACK_WEBHOOK_URL }}

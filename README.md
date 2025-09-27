@@ -212,6 +212,6 @@ Este proyecto es parte del reto técnico de Coordinadora.
 
 ---
 
-**Desarrollado por**: [Tu Nombre]  
-**Fecha**: Enero 2024  
+**Desarrollado por**: Javier D. Fajardo R.
+**Fecha**: 27 de Septiembre de 2025
 **Versión**: 1.0.0

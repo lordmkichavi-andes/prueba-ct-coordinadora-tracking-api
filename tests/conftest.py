@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 from flask import Flask
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -8,19 +9,19 @@ from app import create_app
 from src.infrastructure.database.database import db
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def app():
     """Fixture para la aplicación Flask de testing"""
-    
+
     # Configurar base de datos de testing
-    os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
-    os.environ['JWT_SECRET_KEY'] = 'test-secret-key'
-    os.environ['API_KEY'] = 'test-api-key'
-    
+    os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+    os.environ["JWT_SECRET_KEY"] = "test-secret-key"
+    os.environ["API_KEY"] = "test-api-key"
+
     app = create_app()
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    
+    app.config["TESTING"] = True
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+
     with app.app_context():
         db.create_all()
         yield app
@@ -43,10 +44,7 @@ def db_session(app):
 @pytest.fixture
 def auth_headers():
     """Fixture para headers de autenticación"""
-    return {
-        'X-API-Key': 'test-api-key',
-        'Content-Type': 'application/json'
-    }
+    return {"X-API-Key": "test-api-key", "Content-Type": "application/json"}
 
 
 @pytest.fixture
@@ -59,8 +57,8 @@ def sample_tracking_id():
 def sample_checkpoint_data():
     """Fixture para datos de checkpoint de prueba"""
     return {
-        'status': 'PICKED_UP',
-        'location': 'Centro de distribución',
-        'notes': 'Paquete recogido exitosamente',
-        'operator_id': 'OP001'
+        "status": "PICKED_UP",
+        "location": "Centro de distribución",
+        "notes": "Paquete recogido exitosamente",
+        "operator_id": "OP001",
     }

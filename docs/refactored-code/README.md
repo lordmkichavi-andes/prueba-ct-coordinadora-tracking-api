@@ -35,24 +35,6 @@ Se propone una **refactorización de la siguiente forma**:
 - **Capa de Infraestructura**: Controladores, Repositorios concretos, Frameworks
 - **Capa de Presentación**: APIs REST, Validación, Serialización
 
-## Problemas Resueltos
-
-1. ** Separación de Capas**: Clean Architecture con 4 capas bien definidas
-2. ** Principio de Responsabilidad Única**: Cada clase tiene una responsabilidad específica
-3. ** Inversión de Dependencias**: Uso de interfaces y inyección de dependencias
-4. ** Persistencia Real**: PostgreSQL con SQLAlchemy ORM
-5. ** Tipado Fuerte**: Python con type hints y validación con Marshmallow
-6. ** IDs Seguros**: UUIDs para identificación única
-7. ** Validación de Entradas**: Esquemas Marshmallow para validación
-8. ** Manejo de Errores**: Middleware global de errores
-9. ** Transaccionalidad**: Transacciones de base de datos ACID
-10. ** Búsquedas Eficientes**: Consultas SQL optimizadas
-11. ** Lógica Centralizada**: Una sola fuente de verdad en el dominio
-12. ** Abstracciones**: Interfaces para todos los servicios
-13. ** Idempotencia**: Manejo de requests duplicados
-14. ** Fechas Estándar**: ISO 8601 para todas las fechas
-15. ** Contratos Explícitos**: Entidades y DTOs bien definidos
-
 ## 🏗️ Arquitectura Implementada
 
 ### 🧪 Estrategia de Testing

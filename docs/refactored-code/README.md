@@ -35,26 +35,12 @@ Se propone una **refactorización de la siguiente forma**:
 - **Capa de Infraestructura**: Controladores, Repositorios concretos, Frameworks
 - **Capa de Presentación**: APIs REST, Validación, Serialización
 
-## 🏗️ Arquitectura Implementada
-
 ### 🧪 Estrategia de Testing
 
 - **Pruebas Unitarias**: Dominio y casos de uso aislados
 - **Pruebas de Integración**: APIs completas con base de datos real
 - **Mocks**: Para aislamiento y control de dependencias
 - **Fixtures**: Datos de prueba reutilizables
-
-## 📈 Comparación con Implementación Original
-
-| Aspecto | Código Original | Código Refactorizado |
-|---------|----------------|---------------------|
-| **Arquitectura** | Monolítica | Clean Architecture |
-| **Persistencia** | Memoria | PostgreSQL |
-| **Testing** | Sin pruebas | 90%+ cobertura |
-| **Seguridad** | Sin autenticación | API Key + Rate Limiting |
-| **Escalabilidad** | No escalable | Horizontal + Asíncrono |
-| **Mantenibilidad** | Baja | Alta |
-| **Performance** | O(n) búsquedas | SQL optimizado |
 
 ## 📚 Archivos de la Entrega
 

@@ -564,13 +564,6 @@ La API genera logs estructurados con la siguiente información:
 }
 ```
 
-### Métricas Disponibles
-
-- **Request Count**: Número total de requests
-- **Response Time**: Tiempo de respuesta promedio
-- **Error Rate**: Porcentaje de errores
-- **Business Metrics**: Unidades por estado, checkpoints totales
-
 ---
 
 ## 🔄 Procesamiento Asíncrono
@@ -588,14 +581,6 @@ Cuando se registra un checkpoint, se ejecutan automáticamente las siguientes ta
 - **checkpoints**: Procesamiento de checkpoints
 - **notifications**: Envío de notificaciones
 - **celery**: Tareas generales
-
----
-
-## 📚 Referencias Adicionales
-
-- [Clean Architecture Documentation](docs/c4-diagrams.md)
-- [Testing Documentation](docs/testing.md)
-- [README Principal](../README.md)
 
 ---
 

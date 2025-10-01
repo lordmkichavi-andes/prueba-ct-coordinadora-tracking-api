@@ -442,8 +442,3 @@ docker-compose exec app python3 -m pytest --cov=src --cov-report=html
 docker-compose exec app python3 -m pytest --cov=src --cov-report=term-missing
 ```
 ---
-
-**Total de Pruebas**: 25+  
-**Cobertura de Código**: 90%+  
-**Tiempo de Ejecución**: < 30 segundos  
-**Última Actualización**: Enero 2024

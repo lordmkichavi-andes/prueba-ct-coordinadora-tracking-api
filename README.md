@@ -31,22 +31,11 @@ El proyecto implementa **Clean Architecture** con las siguientes capas:
 - `GET /api/v1/tracking/:trackingId` - Consultar historial de tracking
 - `GET /api/v1/shipments` - Listar unidades por estado
 
-### Características
-
-- ✅ **Clean Architecture** con separación clara de responsabilidades
-- ✅ **Seguridad** con API Key authentication y rate limiting
-- ✅ **Procesamiento Asíncrono** con Celery para tareas en background
-- ✅ **Validación** robusta con Marshmallow schemas
-- ✅ **Logging** estructurado con Structlog
-- ✅ **Testing** completo con pruebas unitarias e integración
-- ✅ **Documentación** C4 con diagramas de arquitectura
-
-## 🛠️ Instalación y Configuración
+## 🛠️ Configuración
 
 ### Prerrequisitos
 
 - Docker y Docker Compose
-- Colima (para macOS)
 
 ### Configuración Inicial
 
@@ -59,11 +48,6 @@ cd prueba-ct-coordinadora-tracking-api
 2. **Configurar variables de entorno:**
 ```bash
 cp env.example .env
-```
-
-3. **Iniciar Colima (macOS):**
-```bash
-colima start
 ```
 
 4. **Construir y ejecutar servicios:**
@@ -166,13 +150,6 @@ coordinadora/
 └── README.md             # Este archivo
 ```
 
-## 🔐 Seguridad
-
-- **API Key Authentication**: Autenticación basada en API keys
-- **Rate Limiting**: Límites de velocidad por IP
-- **Input Validation**: Validación robusta de entrada
-- **CORS**: Configuración de CORS para seguridad
-
 ## 🚀 Despliegue
 
 ### Variables de Entorno Requeridas
@@ -189,22 +166,6 @@ REDIS_URL=redis://redis:6379/0
 - **celery**: Worker de Celery
 - **db**: PostgreSQL (Puerto 5432)
 - **redis**: Redis (Puerto 6379)
-
-## 📈 Próximos Pasos
-
-- [ ] Implementar Bloque 2 - Agrupaciones de Unidades
-- [ ] Agregar más métricas de monitoreo
-- [ ] Implementar autenticación JWT
-- [ ] Agregar documentación OpenAPI/Swagger
-- [ ] Configurar CI/CD pipeline
-
-## 👥 Contribución
-
-1. Fork el proyecto
-2. Crear una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir un Pull Request
 
 ## 📄 Licencia
 

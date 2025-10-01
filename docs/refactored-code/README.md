@@ -1,6 +1,6 @@
 # Código Refactorizado - Coordinadora Tracking API
 
-## 📋 Entrega Etapa 1 - Refactorización Completa
+## 📋 Entrega Etapa - Refactorización Completa
 
 Este directorio contiene la **Refactorización de código**.
 

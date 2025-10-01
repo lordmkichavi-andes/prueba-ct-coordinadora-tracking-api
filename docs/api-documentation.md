@@ -584,6 +584,3 @@ Cuando se registra un checkpoint, se ejecutan automáticamente las siguientes ta
 
 ---
 
-**Versión de API**: 1.0.0  
-**Última Actualización**: Enero 2024  
-**Base URL**: `http://localhost:8000` (desarrollo)

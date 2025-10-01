@@ -6,10 +6,10 @@ El proyecto implementa una estrategia de testing completa que incluye **pruebas 
 
 ### 📊 Cobertura de Pruebas
 
-- ✅ **Pruebas Unitarias**: Dominio, casos de uso y servicios
-- ✅ **Pruebas de Integración**: APIs, base de datos y servicios externos
-- ✅ **Mocks y Fixtures**: Para aislamiento y reutilización
-- ✅ **Docker Testing**: Ambiente aislado para pruebas
+- **Pruebas Unitarias**: Dominio, casos de uso y servicios
+- **Pruebas de Integración**: APIs, base de datos y servicios externos
+- **Mocks y Fixtures**: Para aislamiento y reutilización
+- **Docker Testing**: Ambiente aislado para pruebas
 
 ## 🏗️ Estructura de Pruebas
 
@@ -29,7 +29,7 @@ tests/
 
 **Archivo**: `tests/unit/test_domain_entities.py`
 
-#### ✅ Unit Entity Tests
+#### Unit Entity Tests
 
 ```python
 def test_unit_creation():
@@ -441,100 +441,6 @@ docker-compose exec app python3 -m pytest --cov=src --cov-report=html
 # Ver cobertura en terminal
 docker-compose exec app python3 -m pytest --cov=src --cov-report=term-missing
 ```
-
-## 📊 Métricas de Calidad
-
-### Cobertura de Código
-
-- **Dominio**: 100% - Todas las entidades y value objects
-- **Aplicación**: 95% - Casos de uso y servicios
-- **Infraestructura**: 90% - Repositorios y servicios externos
-- **Presentación**: 85% - Controladores y esquemas
-
-### Tipos de Pruebas por Capa
-
-| Capa | Pruebas Unitarias | Pruebas Integración |
-|------|-------------------|-------------------|
-| **Domain** | ✅ Entidades, Value Objects | ❌ No aplica |
-| **Application** | ✅ Casos de uso, Servicios | ✅ Con repositorios mock |
-| **Infrastructure** | ✅ Repositorios, Servicios | ✅ Base de datos real |
-| **Presentation** | ✅ Controladores | ✅ API endpoints completos |
-
-## 🔍 Estrategias de Testing
-
-### 1. **AAA Pattern** (Arrange-Act-Assert)
-```python
-def test_example():
-    # Arrange: Preparar datos y mocks
-    tracking_id = TrackingId("TEST123456")
-    
-    # Act: Ejecutar la acción
-    result = use_case.execute(tracking_id)
-    
-    # Assert: Verificar resultados
-    assert result["success"] is True
-```
-
-### 2. **Mocking y Stubbing**
-```python
-@patch('src.infrastructure.repositories.unit_repository_impl.UnitRepositoryImpl')
-def test_with_mock(self, mock_repo):
-    mock_repo.find_by_tracking_id.return_value = None
-    # Test logic here
-```
-
-### 3. **Fixtures Reutilizables**
-```python
-@pytest.fixture
-def sample_unit():
-    return Unit(TrackingId("TEST123456"))
-```
-
-### 4. **Parametrización de Pruebas**
-```python
-@pytest.mark.parametrize("status,expected", [
-    (UnitStatus.CREATED, True),
-    (UnitStatus.DELIVERED, False),
-])
-def test_status_transitions(status, expected):
-    # Test logic
-```
-
-## 🎯 Mejores Prácticas Implementadas
-
-### ✅ **Aislamiento**
-- Cada prueba es independiente
-- Uso de transacciones de base de datos
-- Limpieza automática después de cada prueba
-
-### ✅ **Nombres Descriptivos**
-- `test_unit_creation()` - Qué se prueba
-- `test_invalid_status_transition()` - Condición específica
-
-### ✅ **Assertions Claras**
-- Mensajes de error descriptivos
-- Verificación de múltiples aspectos
-- Uso de `pytest.raises()` para excepciones
-
-### ✅ **Configuración Centralizada**
-- Fixtures reutilizables en `conftest.py`
-- Configuración de pytest en `pytest.ini`
-- Variables de entorno para testing
-
-### ✅ **Cobertura Completa**
-- Pruebas de casos felices (happy path)
-- Pruebas de casos de error
-- Pruebas de validación de entrada
-- Pruebas de autenticación y autorización
-
-## 📈 Próximos Pasos
-
-- [ ] Implementar pruebas de performance
-- [ ] Agregar pruebas de carga con locust
-- [ ] Configurar CI/CD con GitHub Actions
-- [ ] Implementar pruebas de mutación
-- [ ] Agregar pruebas de contratos de API
-
 ---
 
 **Total de Pruebas**: 25+  
